@@ -1,0 +1,9 @@
+.gradle/
+build/
+.fabric/
+.loom/
+.vscode/
+.idea/
+*.jar
+*.bin
+*.lock

@@ -55,7 +55,7 @@ public abstract class AbstractRewardScreen extends AbstractACScreen {
     }
 
     protected int getMaxPage() {
-        return Math.max(1, elementAmount() / 6);
+        return (int) Math.ceil((double) elementAmount() / 7.0);
     }
 
     protected abstract Map<? extends Number, ? extends JsonBaseReward<?>> getRewards();
@@ -73,15 +73,18 @@ public abstract class AbstractRewardScreen extends AbstractACScreen {
     protected void fillEmpty() {
         super.fillEmpty();
 
-        setButton(18, ItemBuilder.start(backItem).name("Main Page").button(event -> event.player.openHandledScreen(new SelectionScreen())));
+        setButton(18, ItemBuilder.start(backItem).name("Main Page")
+                .button(event -> event.player.openHandledScreen(new SelectionScreen())));
 
         int prev = getPage() - 1;
         boolean canPrev = canSetPageTo(prev);
-        setButton(25, ItemBuilder.start(canPrev ? prevItem : invalidItem).name(canPrev ? "Previous Page: " + prev : "").button(canPrev ? event -> setPageForPlayer(prev, event.player) : null));
+        setButton(25, ItemBuilder.start(canPrev ? prevItem : invalidItem).name(canPrev ? "Previous Page: " + prev : "")
+                .button(canPrev ? event -> setPageForPlayer(prev, event.player) : null));
 
         int next = getPage() + 1;
         boolean canNext = canSetPageTo(next);
-        setButton(26, ItemBuilder.start(canNext ? nextItem : invalidItem).name(canNext ? "Next Page: " + next : "").button(canNext ? event -> setPageForPlayer(next, event.player) : null));
+        setButton(26, ItemBuilder.start(canNext ? nextItem : invalidItem).name(canNext ? "Next Page: " + next : "")
+                .button(canNext ? event -> setPageForPlayer(next, event.player) : null));
     }
 
     private void setPageForPlayer(int page, ServerPlayerEntity viewer) {
@@ -108,16 +111,22 @@ public abstract class AbstractRewardScreen extends AbstractACScreen {
         return isClaimed ? alreadyClaimed : (isClaimable ? canClaim : cannotBeClaimed);
     }
 
-    protected void onClick(boolean isClaimed, boolean isClaimable, ServerPlayerEntity player, JsonPlayerData data, JsonBaseReward<?> jbr, Type type) {
+    protected void onClick(boolean isClaimed, boolean isClaimable, ServerPlayerEntity player, JsonPlayerData data,
+            JsonBaseReward<?> jbr, Type type) {
         if (!isClaimed && isClaimable) {
             List<ItemStack> stacks = jbr.getRewardItems().stream().map(JsonStack::toItemStack).toList();
             int empty = 0;
             for (ItemStack iStack : player.getInventory().main) {
-                if (!iStack.isEmpty()) continue;
+                if (!iStack.isEmpty())
+                    continue;
                 empty++;
             }
             if (empty < stacks.size()) {
-                player.sendMessage(Text.empty().append(String.format("Your inventory is too full to receive %s items! You only have %s empty slots.", stacks.size(), empty)).formatted(Formatting.RED));
+                player.sendMessage(Text.empty()
+                        .append(String.format(
+                                "Your inventory is too full to receive %s items! You only have %s empty slots.",
+                                stacks.size(), empty))
+                        .formatted(Formatting.RED));
                 return;
             }
             for (ItemStack is : stacks) {
@@ -132,5 +141,7 @@ public abstract class AbstractRewardScreen extends AbstractACScreen {
         }
     }
 
-    public enum Type{Playtime, Daily}
+    public enum Type {
+        Playtime, Daily
+    }
 }

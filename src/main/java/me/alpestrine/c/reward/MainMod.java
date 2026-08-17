@@ -25,7 +25,7 @@ import java.util.UUID;
 
 public class MainMod implements ModInitializer {
 	public static final String ID = "rewards";
-    public static final Logger LOGGER = LoggerFactory.getLogger(ID);
+	public static final Logger LOGGER = LoggerFactory.getLogger(ID);
 
 	@Override
 	public void onInitialize() {
@@ -33,25 +33,30 @@ public class MainMod implements ModInitializer {
 		CommandRegistrationCallback.EVENT.register(this::register);
 	}
 
-	private void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess, CommandManager.RegistrationEnvironment environment) {
+	private void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess,
+			CommandManager.RegistrationEnvironment environment) {
 		for (ConfigType ct : ConfigType.values()) {
-			dispatcher.register(CommandManager.literal(String.format("rewards-reload-%s-config", ct.name().toLowerCase()))
-					.executes(context -> MainServer.execute(() -> execCommand(context, environment, ct))));
+			dispatcher
+					.register(CommandManager.literal(String.format("rewards-reload-%s-config", ct.name().toLowerCase()))
+							.executes(context -> MainServer.execute(() -> execCommand(context, environment, ct))));
 		}
 
 		String rewardScreenEntity = "rewards-screen-entity";
 		dispatcher.register(CommandManager.literal(rewardScreenEntity)
 				.then(CommandManager.literal("add")
-					.then((CommandManager.argument("targets", EntityArgumentType.entities())
-					.executes(context -> doScreenEntity(context, environment, ScreenEntityAction.Added, EntityArgumentType.getEntity(context, "targets")))))));
+						.then((CommandManager.argument("targets", EntityArgumentType.entities())
+								.executes(context -> doScreenEntity(context, environment, ScreenEntityAction.Added,
+										EntityArgumentType.getEntity(context, "targets")))))));
 
 		dispatcher.register(CommandManager.literal(rewardScreenEntity)
 				.then(CommandManager.literal("remove")
-					.then(CommandManager.argument("targets", EntityArgumentType.entities())
-					.executes(context -> doScreenEntity(context, environment, ScreenEntityAction.Removed, EntityArgumentType.getEntity(context, "targets"))))));
+						.then(CommandManager.argument("targets", EntityArgumentType.entities())
+								.executes(context -> doScreenEntity(context, environment, ScreenEntityAction.Removed,
+										EntityArgumentType.getEntity(context, "targets"))))));
 	}
 
-	private int doScreenEntity(CommandContext<ServerCommandSource> context, CommandManager.RegistrationEnvironment environment, ScreenEntityAction action, Entity entity) {
+	private int doScreenEntity(CommandContext<ServerCommandSource> context,
+			CommandManager.RegistrationEnvironment environment, ScreenEntityAction action, Entity entity) {
 		ServerCommandSource scs = context.getSource();
 		UUID uuid;
 		if (entity == null || (uuid = entity.getUuid()) == null) {
@@ -74,17 +79,22 @@ public class MainMod implements ModInitializer {
 				scs.sendMessage(Text.of(String.format("Successfully %s UUID: %s", action.name(), uuid)));
 			}
 
-
+			// --- FIX: Force save of global config to disk when adding/removing NPCs ---
 			MainServer.configHandlerThread.execute(MainServer.globalConfigHandler::writeCurrentValue);
+			// --------------------------------------------------------------------------
+
 		} else {
 			scs.sendError(Text.of("No permission!"));
 		}
 		return 0;
 	}
 
-	public enum ScreenEntityAction {Added, Removed}
+	public enum ScreenEntityAction {
+		Added, Removed
+	}
 
-	private void execCommand(CommandContext<ServerCommandSource> context, CommandManager.RegistrationEnvironment environment, ConfigType type) {
+	private void execCommand(CommandContext<ServerCommandSource> context,
+			CommandManager.RegistrationEnvironment environment, ConfigType type) {
 		ServerCommandSource scs = context.getSource();
 		if (scs.hasPermissionLevel(2) || environment.integrated) {
 			try {
@@ -93,10 +103,13 @@ public class MainMod implements ModInitializer {
 					case Playtime -> PlaytimeScreen.playtimeHandler;
 					case PlayerData -> AbstractRewardScreen.dataHandler;
 					case Global -> MainServer.globalConfigHandler;
-				}).reload() ? "Successfully reloaded %s config!" : "Config file for %s didn't exist or was empty, default config was saved to disk.", type.name())));
+				}).reload() ? "Successfully reloaded %s config!"
+						: "Config file for %s didn't exist or was empty, default config was saved to disk.",
+						type.name())));
 				scs.getServer().getPlayerManager().getPlayerList().forEach(MainMod::refreshIfRewardScreen);
 			} catch (Exception e) {
-				scs.sendMessage(Text.of(String.format("Failed to reload %s config, check logs for error.", type.name())));
+				scs.sendMessage(
+						Text.of(String.format("Failed to reload %s config, check logs for error.", type.name())));
 				e.printStackTrace(System.err);
 			}
 		} else {
@@ -105,10 +118,13 @@ public class MainMod implements ModInitializer {
 	}
 
 	public static void refreshIfRewardScreen(ServerPlayerEntity spe) {
-		if (spe.currentScreenHandler instanceof CustomScreenHandler csh && csh.getInventory() instanceof AbstractACScreen aacs) {
+		if (spe.currentScreenHandler instanceof CustomScreenHandler csh
+				&& csh.getInventory() instanceof AbstractACScreen aacs) {
 			aacs.refresh(spe);
 		}
 	}
 
-	public enum ConfigType {Daily, Playtime, Global, PlayerData}
+	public enum ConfigType {
+		Daily, Playtime, Global, PlayerData
+	}
 }

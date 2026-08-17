@@ -32,6 +32,7 @@ public class MainServer {
     public static HashSet<UUID> screenEntities = new HashSet<>();
     private static int lastSave;
     public static MinecraftServer server;
+
     public static void onInit(Object object) {
         server = (MinecraftServer) object;
         DailyScreen.dailyHandler.onInit();
@@ -45,15 +46,24 @@ public class MainServer {
         return 0;
     }
 
-    public static void handleClick(ScreenHandler sh, int slotIndex, int button, SlotActionType actionType, PlayerEntity player, CallbackInfo ci) {
+    public static void handleClick(ScreenHandler sh, int slotIndex, int button, SlotActionType actionType,
+            PlayerEntity player, CallbackInfo ci) {
         try {
             if (!(player instanceof ServerPlayerEntity spe)) {
                 return;
             }
+
+            // --- FIX: Prevent IndexOutOfBoundsException when clicking outside GUI (-1) ---
+            if (slotIndex < 0) {
+                return;
+            }
+            // ---------------------------------------------------------------------------
+
             if (sh instanceof CustomScreenHandler) {
                 ci.cancel();
             }
-            Inventory inventory = slotIndex == ScreenHandler.EMPTY_SPACE_SLOT_INDEX ? player.getInventory() : sh.slots.get(slotIndex).inventory;
+            Inventory inventory = slotIndex == ScreenHandler.EMPTY_SPACE_SLOT_INDEX ? player.getInventory()
+                    : sh.slots.get(slotIndex).inventory;
             InventoryEvent ie = new InventoryEvent(slotIndex, button, actionType, inventory, spe);
             if (inventory instanceof AbstractACScreen s) {
                 s.onClick(ie);
@@ -72,7 +82,11 @@ public class MainServer {
             boolean toUpdate = false;
             for (ServerPlayerEntity spe : MainServer.server.getPlayerManager().getPlayerList()) {
                 JsonPlayerData join = AbstractRewardScreen.dataHandler.getForUUID(spe.getUuid());
-                if (join.currentStreak == 0 || join.lastRewardTime + millisecondsInDay < System.currentTimeMillis()) {// logged in after one day
+                if (join.currentStreak == 0 || join.lastRewardTime + millisecondsInDay < System.currentTimeMillis()) {// logged
+                                                                                                                      // in
+                                                                                                                      // after
+                                                                                                                      // one
+                                                                                                                      // day
                     join.currentStreak++;
                     join.lastRewardTime = System.currentTimeMillis();
                 }
